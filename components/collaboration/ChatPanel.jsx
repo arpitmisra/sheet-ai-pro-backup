@@ -21,21 +21,43 @@ export default function ChatPanel({ sheetId, isOpen, onToggle }) {
 
   useEffect(() => {
     loadUser();
+    // Load persisted messages from localStorage
+    loadPersistedMessages();
   }, []);
 
   useEffect(() => {
     if (isOpen && isConnected) {
-      const unsubscribe = on('CHAT_MESSAGE', (data) => {
-        setMessages((prev) => [...prev, {
+      const unsubscribeChatMessage = on('CHAT_MESSAGE', (data) => {
+        console.log('Received chat message:', data); // Debug log
+        const newMsg = {
           userId: data.userId,
           userName: data.userName,
           message: data.message,
           timestamp: data.timestamp,
-          id: data.timestamp, // Use timestamp as ID
-        }]);
+          id: `${data.userId}-${data.timestamp}`, // Better unique ID
+        };
+        
+        setMessages((prev) => {
+          const updated = [...prev, newMsg];
+          // Persist messages to localStorage
+          persistMessages(updated);
+          return updated;
+        });
       });
 
-      return () => unsubscribe();
+      // Listen for user join/leave events
+      const unsubscribePresence = on('PRESENCE_UPDATE', (data) => {
+        if (data.users && Array.isArray(data.users)) {
+          // Check for new users (basic implementation)
+          // This could be enhanced to show actual join/leave messages
+          console.log('Users online:', data.users.map(u => u.userName));
+        }
+      });
+
+      return () => {
+        unsubscribeChatMessage();
+        unsubscribePresence();
+      };
     }
   }, [isOpen, isConnected, on]);
 
@@ -48,10 +70,37 @@ export default function ChatPanel({ sheetId, isOpen, onToggle }) {
     setCurrentUser(user);
   };
 
+  const loadPersistedMessages = () => {
+    try {
+      const saved = localStorage.getItem(`chat-${sheetId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Only load messages from last 24 hours
+        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+        const recentMessages = parsed.filter(msg => msg.timestamp > oneDayAgo);
+        setMessages(recentMessages);
+      }
+    } catch (error) {
+      console.error('Error loading persisted messages:', error);
+    }
+  };
+
+  const persistMessages = (msgs) => {
+    try {
+      // Keep only last 100 messages
+      const limited = msgs.slice(-100);
+      localStorage.setItem(`chat-${sheetId}`, JSON.stringify(limited));
+    } catch (error) {
+      console.error('Error persisting messages:', error);
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !isConnected) return;
+    if (!newMessage.trim() || !isConnected || !currentUser) return;
 
+    console.log('Sending chat message:', newMessage.trim()); // Debug log
+    
     send('CHAT_MESSAGE', {
       message: newMessage.trim(),
     });
@@ -86,6 +135,7 @@ export default function ChatPanel({ sheetId, isOpen, onToggle }) {
         <div className="flex items-center gap-2">
           <MessageCircle className="w-5 h-5" />
           <h3 className="font-semibold">Team Chat</h3>
+          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} title={isConnected ? 'Connected' : 'Disconnected'} />
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -157,23 +207,35 @@ export default function ChatPanel({ sheetId, isOpen, onToggle }) {
 
           {/* Input */}
           <form onSubmit={handleSendMessage} className="p-3 border-t bg-white rounded-b-lg">
+            {!isConnected && (
+              <div className="mb-2 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                Reconnecting to chat...
+              </div>
+            )}
             <div className="flex gap-2">
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
+                placeholder={isConnected ? "Type a message..." : "Connecting..."}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 disabled={!isConnected}
+                maxLength={500}
               />
               <button
                 type="submit"
                 disabled={!isConnected || !newMessage.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                title={isConnected ? "Send message" : "Chat disconnected"}
               >
                 <Send className="w-4 h-4" />
               </button>
             </div>
+            {newMessage.length > 400 && (
+              <div className="mt-1 text-xs text-gray-500">
+                {500 - newMessage.length} characters remaining
+              </div>
+            )}
           </form>
         </>
       )}
