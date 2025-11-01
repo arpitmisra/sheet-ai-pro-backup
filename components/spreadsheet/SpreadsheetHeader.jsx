@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useSpreadsheetStore } from '@/store/spreadsheetStore';
 import QuickToolbar from './QuickToolbar';
+import FormulaToolbar from './FormulaToolbar';
 import {
   FileText,
   Edit3,
@@ -328,6 +329,9 @@ export default function SpreadsheetHeader({
         onDownloadCSV={handleDownloadCSV}
         onImportCSV={() => fileInputRef.current?.click()}
       />
+
+      {/* Formula Toolbar */}
+      <FormulaToolbar />
 
       {/* Hidden file input for CSV import */}
       <input

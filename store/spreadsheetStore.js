@@ -56,8 +56,13 @@ export const useSpreadsheetStore = create((set, get) => ({
     
     if (!cell) return '';
     
+    console.log('Store: Getting value for cell', cellRef, 'cell data:', cell); // Debug log
+    
     if (cell.formula) {
-      return evaluateFormula(cell.formula, cells);
+      console.log('Store: Evaluating formula:', cell.formula); // Debug log
+      const result = evaluateFormula(cell.formula, cells);
+      console.log('Store: Formula result:', result); // Debug log
+      return result;
     }
     
     return cell.value || '';
@@ -74,6 +79,8 @@ export const useSpreadsheetStore = create((set, get) => ({
     
     const { row, col } = parsedRef;
     
+    console.log('Store: Updating cell', cellRef, 'with value:', value, 'isFormula:', isFormula); // Debug log
+    
     // Update local state immediately
     const updatedCells = {
       ...cells,
@@ -86,6 +93,9 @@ export const useSpreadsheetStore = create((set, get) => ({
     };
     
     set({ cells: updatedCells });
+    
+    // Debug log the updated cells
+    console.log('Store: Updated cells:', updatedCells[cellRef]); // Debug log
     
     // Debounced save to database
     debouncedSave(sheetId, row, col, value, isFormula ? value : null);
