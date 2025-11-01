@@ -85,6 +85,7 @@ export const useSpreadsheetStore = create((set, get) => ({
     const updatedCells = {
       ...cells,
       [cellRef]: {
+        ...cells[cellRef], // Preserve existing formatting
         value: isFormula ? null : value,
         formula: isFormula ? value : null,
         row,
@@ -99,6 +100,38 @@ export const useSpreadsheetStore = create((set, get) => ({
     
     // Debounced save to database
     debouncedSave(sheetId, row, col, value, isFormula ? value : null);
+  },
+
+  /**
+   * Update cell formatting
+   */
+  updateCellFormat: (cellRef, formatting) => {
+    const { cells } = get();
+    const parsedRef = parseCellReference(cellRef);
+    
+    if (!parsedRef) return;
+    
+    const { row, col } = parsedRef;
+    
+    console.log('Store: Updating cell format', cellRef, 'with formatting:', formatting); // Debug log
+    
+    // Update local state immediately
+    const updatedCells = {
+      ...cells,
+      [cellRef]: {
+        ...cells[cellRef], // Preserve existing data
+        row,
+        col,
+        formatting: {
+          ...cells[cellRef]?.formatting, // Preserve existing formatting
+          ...formatting, // Apply new formatting
+        },
+      },
+    };
+    
+    set({ cells: updatedCells });
+    
+    console.log('Store: Updated cell formatting:', updatedCells[cellRef]); // Debug log
   },
 
   /**

@@ -15,6 +15,7 @@ export default function Spreadsheet({ sheetId, user }) {
     selectedCell,
     rows,
     cols,
+    cells,
   } = useSpreadsheetStore();
   
   const { send, on, isConnected } = useWebSocket(
@@ -274,6 +275,10 @@ export default function Spreadsheet({ sheetId, user }) {
     const isEditing = editingCell === cellRef;
     const displayValue = isEditing ? editValue : getCellValue(cellRef);
     const width = getColumnWidth(col);
+    
+    // Get cell data and formatting
+    const cellData = cells[cellRef];
+    const formatting = cellData?.formatting || {};
 
     return (
       <div
@@ -290,6 +295,7 @@ export default function Spreadsheet({ sheetId, user }) {
           maxWidth: `${width}px`,
           height: '30px',
           cursor: 'cell',
+          backgroundColor: formatting.backgroundColor || 'transparent',
         }}
       >
         {isEditing ? (
@@ -301,12 +307,26 @@ export default function Spreadsheet({ sheetId, user }) {
             onKeyDown={handleCellKeyDown}
             autoFocus
             className="w-full h-full px-2 py-1 text-sm outline-none border-2 border-blue-500"
-            style={{ backgroundColor: 'white' }}
+            style={{ 
+              backgroundColor: 'white',
+              color: formatting.color || '#000000',
+              fontWeight: formatting.fontWeight || 'normal',
+              fontStyle: formatting.fontStyle || 'normal',
+              textDecoration: formatting.textDecoration || 'none',
+              textAlign: formatting.textAlign || 'left',
+            }}
           />
         ) : (
           <div 
             className="px-2 py-1 text-sm h-full flex items-center overflow-hidden"
             title={displayValue} // Show full text on hover
+            style={{
+              color: formatting.color || '#000000',
+              fontWeight: formatting.fontWeight || 'normal',
+              fontStyle: formatting.fontStyle || 'normal',
+              textDecoration: formatting.textDecoration || 'none',
+              textAlign: formatting.textAlign || 'left',
+            }}
           >
             <span className="truncate">{displayValue || ''}</span>
           </div>

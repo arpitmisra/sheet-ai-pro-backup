@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { useSpreadsheetStore } from '@/store/spreadsheetStore';
 import QuickToolbar from './QuickToolbar';
 import FormulaToolbar from './FormulaToolbar';
+import CellFormatting from './CellFormatting';
 import {
   FileText,
   Edit3,
@@ -332,6 +333,9 @@ export default function SpreadsheetHeader({
 
       {/* Formula Toolbar */}
       <FormulaToolbar />
+
+      {/* Cell Formatting */}
+      <CellFormatting />
 
       {/* Hidden file input for CSV import */}
       <input
