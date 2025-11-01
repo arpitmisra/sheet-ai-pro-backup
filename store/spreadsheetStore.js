@@ -132,6 +132,59 @@ export const useSpreadsheetStore = create((set, get) => ({
   getAllCells: () => {
     return get().cells;
   },
+
+  /**
+   * Add a new row at the specified index
+   */
+  addRow: (rowIndex) => {
+    const { cells, rows } = get();
+    const updatedCells = { ...cells };
+    
+    // Shift all rows below the insertion point down by 1
+    Object.keys(updatedCells).forEach(cellRef => {
+      const parsedRef = parseCellReference(cellRef);
+      if (parsedRef && parsedRef.row >= rowIndex) {
+        const newRef = colToLetter(parsedRef.col) + (parsedRef.row + 2);
+        updatedCells[newRef] = { 
+          ...updatedCells[cellRef], 
+          row: parsedRef.row + 1 
+        };
+        delete updatedCells[cellRef];
+      }
+    });
+    
+    set({ cells: updatedCells, rows: Math.max(rows, rowIndex + 50) });
+  },
+
+  /**
+   * Add a new column at the specified index
+   */
+  addColumn: (colIndex) => {
+    const { cells, cols } = get();
+    const updatedCells = { ...cells };
+    
+    // Shift all columns to the right of the insertion point by 1
+    Object.keys(updatedCells).forEach(cellRef => {
+      const parsedRef = parseCellReference(cellRef);
+      if (parsedRef && parsedRef.col >= colIndex) {
+        const newRef = colToLetter(parsedRef.col + 1) + (parsedRef.row + 1);
+        updatedCells[newRef] = { 
+          ...updatedCells[cellRef], 
+          col: parsedRef.col + 1 
+        };
+        delete updatedCells[cellRef];
+      }
+    });
+    
+    set({ cells: updatedCells, cols: Math.max(cols, colIndex + 10) });
+  },
+
+  /**
+   * Clear all cells
+   */
+  clearCells: () => {
+    set({ cells: {} });
+  },
 }));
 
 /**
